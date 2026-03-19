@@ -105,4 +105,6 @@ Configure your AI client to connect to this URL using the **Streamable HTTP** tr
 
 ## License
 
-MIT
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for the full text.
+
+> **Disclaimer:** This package is provided "as is", without warranty of any kind. Use it at your own risk. The author(s) accept no liability for any damage, data loss, or other issues arising from its use in any environment, including production Optimizely CMS installations.
