@@ -54,6 +54,17 @@ jobs:
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
 
+          # Determine the previous tag for the changelog base:
+          # - Stable release: compare against the previous stable tag
+          # - Beta release: compare against the most recent tag of any kind
+          #   (gives incremental notes for each beta; first beta falls back to last stable)
+          if [ "$BRANCH" = "main" ]; then
+            PREVIOUS_TAG="$LATEST_STABLE"
+          else
+            PREVIOUS_TAG=$(git tag --sort=-version:refname | head -1)
+          fi
+          echo "previous_tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -70,5 +81,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
+          previous_tag: ${{ steps.version.outputs.previous_tag }}
           prerelease: ${{ steps.version.outputs.is_prerelease }}
           files: ./artifacts/*.nupkg
