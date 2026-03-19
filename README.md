@@ -29,19 +29,6 @@ Two guided prompts help AI assistants scaffold the correct tool calls:
 - .NET 8 or .NET 10
 - SQL Server (managed by your Optimizely project)
 
-## NuGet source
-
-Optimizely packages are distributed via a private feed. Add it to your `nuget.config`:
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-  </packageSources>
-</configuration>
-```
-
 ## Installation
 
 ```bash
