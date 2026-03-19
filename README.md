@@ -1,6 +1,10 @@
 # Hangsolow.OptiMcpServer
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server library for **Optimizely CMS 12**. Install it into your existing Optimizely project to expose content operations as tools callable by AI assistants (Claude, Copilot, etc.).
+> ⚠️ **Development tool only — do not use in production**
+>
+> This package is intended exclusively for **local development** against a **local database**. It exposes unauthenticated content read/write operations over HTTP. Running it in a production or shared environment is a serious security risk and is strongly discouraged.
+
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server library for **Optimizely CMS 12**. Install it into your local Optimizely development project to expose content operations as tools callable by AI assistants (Claude, Copilot, etc.).
 
 ## What it does
 
@@ -27,9 +31,11 @@ Two guided prompts help AI assistants scaffold the correct tool calls:
 
 - Optimizely CMS 12
 - .NET 8 or .NET 10
-- SQL Server (managed by your Optimizely project)
+- SQL Server — **local development database only**
 
 ## Installation
+
+> Install this package only in your **development** project configuration (e.g. guarded by `#if DEBUG` or an environment check). Never deploy it to staging or production.
 
 ```bash
 dotnet add package Hangsolow.OptiMcpServer
