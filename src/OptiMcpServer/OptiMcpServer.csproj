@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>OptiMcpServer</RootNamespace>
+    <AssemblyName>OptiMcpServer</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.1.0" />
+    <PackageReference Include="EPiServer.CMS" Version="12.*" />
+    <PackageReference Include="EPiServer.Hosting" Version="12.*" />
+  </ItemGroup>
+
+</Project>
