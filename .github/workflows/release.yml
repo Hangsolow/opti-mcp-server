@@ -81,6 +81,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: ${{ steps.version.outputs.tag }}
           generate_release_notes: true
-          previous_tag_name: ${{ steps.version.outputs.previous_tag }}
+          previous_tag: ${{ steps.version.outputs.previous_tag }}
           prerelease: ${{ steps.version.outputs.is_prerelease }}
           files: ./artifacts/*.nupkg
