@@ -13,6 +13,7 @@
     <Authors>Hangsolow</Authors>
     <Description>MCP (Model Context Protocol) server tools for Optimizely CMS 12. Exposes content query, write, type inspection, and URL resolution as MCP tools callable by AI assistants.</Description>
     <PackageTags>optimizely;episerver;cms;mcp;ai;modelcontextprotocol</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Hangsolow/opti-mcp-server</RepositoryUrl>
   </PropertyGroup>
