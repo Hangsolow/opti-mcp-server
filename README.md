@@ -38,7 +38,6 @@ Optimizely packages are distributed via a private feed. Add it to your `nuget.co
 <configuration>
   <packageSources>
     <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
-    <add key="optimizely" value="https://api.nuget.optimizely.com/v3/index.json" />
   </packageSources>
 </configuration>
 ```
