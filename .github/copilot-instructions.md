@@ -1,17 +1,20 @@
 # Optimizely MCP Server — Copilot Instructions
 
 ## What this project does
-An ASP.NET Core 10 MCP (Model Context Protocol) server that exposes Optimizely CMS 12 content operations as tools callable by AI assistants. It runs in-process with the Optimizely SDK — it IS an Optimizely application, not a proxy.
+A NuGet library (`Hangsolow.OptiMcpServer`) that adds MCP (Model Context Protocol) server tooling to an existing Optimizely CMS 12 project. It exposes content operations as tools callable by AI assistants. It runs in-process with the Optimizely SDK — it requires an Optimizely application to host it, and does not bootstrap CMS itself.
+
+**Package ID:** `Hangsolow.OptiMcpServer`  
+**Target frameworks:** `net8.0`, `net10.0`
 
 ## Architecture
 
 ```
 src/OptiMcpServer/
-├── Program.cs              # App bootstrap: Optimizely CMS + MCP server wired together
+├── ServiceCollectionExtensions.cs  # AddOptiMcpServer() extension method — consumer entry point
 ├── Options/
-│   └── ContentCreationOptions.cs  # Bound from "OptiMcpServer" section in appsettings.json
+│   └── ContentCreationOptions.cs   # Bound from "OptiMcpServer" section in consumer's appsettings.json
 ├── Prompts/
-│   └── ContentCreationPrompts.cs  # Prompts: create_page, create_block
+│   └── ContentCreationPrompts.cs   # Prompts: create_page, create_block
 ├── Tools/
 │   ├── ContentQueryTools.cs  # Read: get_content, get_children, get_ancestors
 │   ├── ContentWriteTools.cs  # Write: create_content, update_content, publish_content, move_to_trash
@@ -21,20 +24,20 @@ src/OptiMcpServer/
     └── ContentDto.cs         # DTOs for tool responses (ContentDto, ContentTypeDto)
 ```
 
-## Build and run
+## Build and pack
 
 ```bash
 # Restore (requires api.nuget.optimizely.com — see nuget.config at repo root)
 dotnet restore
 
-# Build
+# Build (both net8.0 and net10.0)
 dotnet build
 
-# Run (set SQL Server connection string in appsettings.json first)
-dotnet run --project src/OptiMcpServer
+# Pack NuGet package
+dotnet pack src/OptiMcpServer -o ./artifacts
 ```
 
-MCP endpoint: `http://localhost:5000/mcp` (Streamable HTTP transport)
+MCP endpoint (in consumer app): `http://<host>/mcp` (Streamable HTTP transport)
 
 ## Key conventions
 
@@ -45,7 +48,7 @@ MCP endpoint: `http://localhost:5000/mcp` (Streamable HTTP transport)
 4. Inject services as method parameters — same DI pattern as tools
 5. Return `string` — it becomes a user-role `PromptMessage` sent to the AI
 
-Prompts are discovered automatically via `WithPromptsFromAssembly()` in `Program.cs`.
+Prompts are discovered automatically via `WithPromptsFromAssembly(typeof(ContentCreationPrompts).Assembly)` in `ServiceCollectionExtensions.cs`.
 
 ### Adding a new MCP tool
 1. Create or open a file in `src/OptiMcpServer/Tools/`
@@ -69,7 +72,7 @@ public static class MyTools
 }
 ```
 
-Tool discovery is automatic via `WithToolsFromAssembly()` in `Program.cs` — no registration needed.
+Tool discovery is automatic via `WithToolsFromAssembly(typeof(ContentQueryTools).Assembly)` in `ServiceCollectionExtensions.cs` — no registration needed.
 
 ### Optimizely content access patterns
 - **Read**: `IContentLoader.Get<IContent>(contentRef)` or `GetChildren<IContent>(parentRef)`
@@ -94,23 +97,36 @@ Set these to your site's abstract base class (e.g. `MySite.Models.Pages.SitePage
 
 The `create_page` and `create_block` prompts use `AppDomain.CurrentDomain.GetAssemblies()` to resolve the configured type name at runtime, then filter `IContentTypeRepository.List()` by `baseType.IsAssignableFrom(contentType.ModelType)`.
 
-### Startup pattern
-`Program.cs` uses the traditional `IHostBuilder` pattern (not minimal APIs) because Optimizely requires `ConfigureCmsDefaults()` on `IHostBuilder`:
+### Startup pattern (consumer project)
+The consuming Optimizely project uses the traditional `IHostBuilder` pattern because Optimizely requires `ConfigureCmsDefaults()` on `IHostBuilder`. The library integrates via the `AddOptiMcpServer()` extension method:
 
 ```csharp
-Host.CreateDefaultBuilder(args)
-    .ConfigureCmsDefaults()   // from EPiServer.Hosting — starts the init engine
-    .ConfigureWebHostDefaults(webBuilder => webBuilder.UseStartup<Startup>())
-    .Build().Run();
+// Consumer's Startup.cs
+public void ConfigureServices(IServiceCollection services)
+{
+    services.AddCms()
+            .AddOptiMcpServer(_configuration); // from Hangsolow.OptiMcpServer
+}
+
+public void Configure(IApplicationBuilder app)
+{
+    app.UseRouting();
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapDefaultControllerRoute();
+        endpoints.MapMcp(); // exposes /mcp
+    });
+}
 ```
 
-MCP services and tools are registered in `Startup.ConfigureServices`, and `endpoints.MapMcp()` is called in `Startup.Configure`.
+`AddOptiMcpServer` returns `IMcpServerBuilder` so the consumer can chain `.WithToolsFromAssembly()` for their own custom tools.
 
 ### NuGet sources
 Optimizely packages (`EPiServer.*`) come from `https://api.nuget.optimizely.com/v3/index.json`. The `nuget.config` at the repo root configures this alongside nuget.org. Key direct dependencies:
 - `EPiServer.CMS 12.*` — umbrella package; resolves `EPiServer.CMS.Core`, `EPiServer.CMS.AspNetCore`, and UI packages
-- `EPiServer.Hosting 12.*` — provides `ConfigureCmsDefaults()` and the initialization engine
 - `ModelContextProtocol.AspNetCore 1.1.0` — MCP server with Streamable HTTP transport
 
+Note: `EPiServer.Hosting` (which provides `ConfigureCmsDefaults()`) is **not** a dependency of this library — it belongs in the consumer project's bootstrap code.
+
 ### Database
-Requires SQL Server. The Optimizely initialization engine runs schema migrations automatically on first start against an empty database. Configure via `appsettings.json` or the `ConnectionStrings__EPiServerDB` environment variable.
+The consumer project requires SQL Server. The Optimizely initialization engine runs schema migrations automatically on first start against an empty database. Configure via the consumer's `appsettings.json` or the `ConnectionStrings__EPiServerDB` environment variable.

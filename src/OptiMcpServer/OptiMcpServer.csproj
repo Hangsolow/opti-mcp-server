@@ -1,17 +1,33 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>OptiMcpServer</RootNamespace>
     <AssemblyName>OptiMcpServer</AssemblyName>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Hangsolow.OptiMcpServer</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Hangsolow</Authors>
+    <Description>MCP (Model Context Protocol) server tools for Optimizely CMS 12. Exposes content query, write, type inspection, and URL resolution as MCP tools callable by AI assistants.</Description>
+    <PackageTags>optimizely;episerver;cms;mcp;ai;modelcontextprotocol</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Hangsolow/opti-mcp-server</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.1.0" />
     <PackageReference Include="EPiServer.CMS" Version="12.*" />
-    <PackageReference Include="EPiServer.Hosting" Version="12.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - release
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          BRANCH="${{ github.ref_name }}"
+
+          # Latest stable tag (vX.Y.Z, no pre-release suffix)
+          LATEST_STABLE=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if [ -z "$LATEST_STABLE" ]; then
+            STABLE_BASE="1.0.0"
+          else
+            IFS='.' read -ra PARTS <<< "${LATEST_STABLE#v}"
+            STABLE_BASE="${PARTS[0]}.${PARTS[1]}.$((${PARTS[2]} + 1))"
+          fi
+
+          if [ "$BRANCH" = "main" ]; then
+            VERSION="$STABLE_BASE"
+            IS_PRERELEASE="false"
+          else
+            # Beta: find latest beta tag for the upcoming stable base
+            LATEST_BETA=$(git tag --sort=-version:refname | grep -E "^v${STABLE_BASE}-beta\.[0-9]+$" | head -1)
+            if [ -z "$LATEST_BETA" ]; then
+              BETA_NUM=1
+            else
+              BETA_NUM=$(echo "$LATEST_BETA" | sed 's/.*-beta\.//')
+              BETA_NUM=$((BETA_NUM + 1))
+            fi
+            VERSION="${STABLE_BASE}-beta.${BETA_NUM}"
+            IS_PRERELEASE="true"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - name: Pack
+        run: dotnet pack src/OptiMcpServer --configuration Release -p:Version=${{ steps.version.outputs.version }} --output ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          prerelease: ${{ steps.version.outputs.is_prerelease }}
+          files: ./artifacts/*.nupkg
