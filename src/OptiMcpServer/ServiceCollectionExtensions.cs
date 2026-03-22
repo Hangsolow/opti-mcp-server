@@ -1,9 +1,12 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Server;
 using OptiMcpServer.Options;
 using OptiMcpServer.Prompts;
 using OptiMcpServer.Tools;
+
+[assembly: InternalsVisibleTo("OptiMcpServer.Tests")]
 
 namespace OptiMcpServer;
 

@@ -69,7 +69,7 @@ public class Startup
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapDefaultControllerRoute();
-            endpoints.MapMcp(); // exposes /mcp
+            endpoints.MapMcp("/mcp"); // exposes /mcp
         });
     }
 }
