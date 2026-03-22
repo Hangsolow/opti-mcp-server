@@ -117,7 +117,14 @@ public static class ContentQueryTools
         if (int.TryParse(id, out var intId))
             return new ContentReference(intId);
 
-        return ContentReference.Parse(id);
+        try
+        {
+            return ContentReference.Parse(id);
+        }
+        catch (Exception ex) when (ex is not FormatException)
+        {
+            throw new FormatException($"Invalid content reference format: '{id}'", ex);
+        }
     }
 
     internal static ContentDto MapToDto(IContent content, IContentTypeRepository contentTypeRepository)
