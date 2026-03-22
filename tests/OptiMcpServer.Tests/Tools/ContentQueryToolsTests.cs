@@ -1,7 +1,7 @@
 using EPiServer.Core;
 using EPiServer.DataAbstraction;
-using Moq;
-using OptiMcpServer.Models;
+using NSubstitute;
+using NSubstitute.ReturnsExtensions;
 using OptiMcpServer.Tools;
 
 namespace OptiMcpServer.Tests.Tools;
@@ -44,9 +44,9 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_BasicContent_MapsIdAndName()
     {
-        var (content, typeRepo) = CreateMockContent(id: 42, name: "Test Page");
+        var (content, typeRepo) = CreateSubstituteContent(id: 42, name: "Test Page");
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.Equal("42", dto.Id);
         Assert.Equal("Test Page", dto.Name);
@@ -55,11 +55,11 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_WithContentType_MapsContentTypeName()
     {
+        var (content, typeRepo) = CreateSubstituteContent(id: 1, name: "Page", contentTypeId: 7);
         var contentType = new ContentType { ID = 7, Name = "StandardPage" };
-        var (content, typeRepo) = CreateMockContent(id: 1, name: "Page", contentTypeId: 7);
-        typeRepo.Setup(r => r.Load(7)).Returns(contentType);
+        typeRepo.Load(7).Returns(contentType);
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.Equal("StandardPage", dto.ContentTypeName);
         Assert.Equal(7, dto.ContentTypeId);
@@ -68,9 +68,9 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_WithParent_MapsParentId()
     {
-        var (content, typeRepo) = CreateMockContent(id: 10, name: "Child", parentId: 5);
+        var (content, typeRepo) = CreateSubstituteContent(id: 10, name: "Child", parentId: 5);
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.Equal("5", dto.ParentId);
     }
@@ -78,16 +78,14 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_SkipsEpPrefixedProperties()
     {
-        var (content, typeRepo) = CreateMockContent(id: 1, name: "Page");
+        var (content, typeRepo) = CreateSubstituteContent(id: 1, name: "Page");
 
         var propCollection = new PropertyDataCollection();
-        var normalProp = new PropertyString { Name = "MainBody", Value = "hello" };
-        var epProp = new PropertyString { Name = "EPPageType", Value = "should be skipped" };
-        propCollection.Add(normalProp);
-        propCollection.Add(epProp);
-        content.SetupGet(c => c.Property).Returns(propCollection);
+        propCollection.Add(new PropertyString { Name = "MainBody", Value = "hello" });
+        propCollection.Add(new PropertyString { Name = "EPPageType", Value = "should be skipped" });
+        content.Property.Returns(propCollection);
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.True(dto.Properties.ContainsKey("MainBody"));
         Assert.False(dto.Properties.Keys.Any(k => k.StartsWith("ep", StringComparison.OrdinalIgnoreCase)));
@@ -96,13 +94,13 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_WithProperties_MapsPropertyValues()
     {
-        var (content, typeRepo) = CreateMockContent(id: 1, name: "Page");
+        var (content, typeRepo) = CreateSubstituteContent(id: 1, name: "Page");
 
         var propCollection = new PropertyDataCollection();
         propCollection.Add(new PropertyString { Name = "Title", Value = "Hello World" });
-        content.SetupGet(c => c.Property).Returns(propCollection);
+        content.Property.Returns(propCollection);
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.Equal("Hello World", dto.Properties["Title"]);
     }
@@ -110,17 +108,17 @@ public class ContentQueryToolsTests
     [Fact]
     public void MapToDto_WhenContentTypeNotFound_ContentTypeNameIsEmpty()
     {
-        var (content, typeRepo) = CreateMockContent(id: 1, name: "Page", contentTypeId: 99);
-        typeRepo.Setup(r => r.Load(99)).Returns((ContentType?)null);
+        var (content, typeRepo) = CreateSubstituteContent(id: 1, name: "Page", contentTypeId: 99);
+        typeRepo.Load(99).ReturnsNull();
 
-        var dto = ContentQueryTools.MapToDto(content.Object, typeRepo.Object);
+        var dto = ContentQueryTools.MapToDto(content, typeRepo);
 
         Assert.Equal(string.Empty, dto.ContentTypeName);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static (Mock<IContent> content, Mock<IContentTypeRepository> typeRepo) CreateMockContent(
+    private static (IContent content, IContentTypeRepository typeRepo) CreateSubstituteContent(
         int id = 1,
         string name = "Test",
         int contentTypeId = 1,
@@ -130,15 +128,15 @@ public class ContentQueryToolsTests
         var parentRef = parentId > 0 ? new ContentReference(parentId) : ContentReference.EmptyReference;
 
         var contentType = new ContentType { ID = contentTypeId, Name = "TestType" };
-        var typeRepo = new Mock<IContentTypeRepository>();
-        typeRepo.Setup(r => r.Load(contentTypeId)).Returns(contentType);
+        var typeRepo = Substitute.For<IContentTypeRepository>();
+        typeRepo.Load(contentTypeId).Returns(contentType);
 
-        var content = new Mock<IContent>();
-        content.SetupGet(c => c.ContentLink).Returns(contentRef);
-        content.SetupGet(c => c.Name).Returns(name);
-        content.SetupGet(c => c.ContentTypeID).Returns(contentTypeId);
-        content.SetupGet(c => c.ParentLink).Returns(parentRef);
-        content.SetupGet(c => c.Property).Returns(new PropertyDataCollection());
+        var content = Substitute.For<IContent>();
+        content.ContentLink.Returns(contentRef);
+        content.Name.Returns(name);
+        content.ContentTypeID.Returns(contentTypeId);
+        content.ParentLink.Returns(parentRef);
+        content.Property.Returns(new PropertyDataCollection());
 
         return (content, typeRepo);
     }
